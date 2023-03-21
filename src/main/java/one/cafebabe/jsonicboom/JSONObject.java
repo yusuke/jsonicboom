@@ -10,10 +10,6 @@ public class JSONObject {
     private final Map<String, Object> map = new HashMap<>();
     private final Map<String, JSONArray> arrayMap = new HashMap<>();
 
-    JSONObject(String jsonString) {
-        this(new JSONTokenizer(jsonString));
-    }
-
     JSONObject(JSONTokenizer jsonTokenizer) {
         JSONTokenizer.JsonIndices next = jsonTokenizer.next();
         if (next.jsonEventType == JSONTokenizer.JsonEventType.START_OBJECT) {

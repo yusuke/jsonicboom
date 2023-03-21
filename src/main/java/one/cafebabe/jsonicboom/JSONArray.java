@@ -8,10 +8,6 @@ import java.util.List;
 public class JSONArray {
     private final List<Object> arrayValues = new ArrayList<>();
 
-    JSONArray(String jsonString) {
-        this(new JSONTokenizer(jsonString));
-    }
-
     JSONArray(JSONTokenizer jsonTokenizer) {
         JSONTokenizer.JsonIndices next = jsonTokenizer.next();
         if (next.jsonEventType == JSONTokenizer.JsonEventType.START_ARRAY) {
