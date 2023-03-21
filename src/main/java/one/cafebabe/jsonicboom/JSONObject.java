@@ -15,10 +15,7 @@ public class JSONObject {
     }
 
     JSONObject(JSONTokenizer jsonTokenizer) {
-        this(jsonTokenizer, jsonTokenizer.next());
-    }
-
-    JSONObject(JSONTokenizer jsonTokenizer, JSONTokenizer.JsonIndices next) {
+        JSONTokenizer.JsonIndices next = jsonTokenizer.next();
         if (next.jsonEventType == JSONTokenizer.JsonEventType.START_OBJECT) {
             next = jsonTokenizer.next();
         }
@@ -27,13 +24,13 @@ public class JSONObject {
             boolean ended = false;
             switch (next.jsonEventType) {
                 case START_OBJECT:
-                    map.put(lastKey, new JSONObject(jsonTokenizer, next));
+                    map.put(lastKey, new JSONObject(jsonTokenizer));
                     break;
                 case END_OBJECT:
                     ended = true;
                     break;
                 case START_ARRAY:
-                    arrayMap.put(lastKey, new JSONArray(jsonTokenizer, next));
+                    arrayMap.put(lastKey, new JSONArray(jsonTokenizer));
                     break;
                 case END_ARRAY:
                     break;

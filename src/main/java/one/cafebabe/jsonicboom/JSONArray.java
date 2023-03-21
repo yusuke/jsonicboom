@@ -13,23 +13,19 @@ public class JSONArray {
     }
 
     JSONArray(JSONTokenizer jsonTokenizer) {
-        this(jsonTokenizer, jsonTokenizer.next());
-    }
-
-    JSONArray(JSONTokenizer jsonTokenizer, JSONTokenizer.JsonIndices next) {
+        JSONTokenizer.JsonIndices next = jsonTokenizer.next();
         if (next.jsonEventType == JSONTokenizer.JsonEventType.START_ARRAY) {
             next = jsonTokenizer.next();
         }
-
         while (null != next) {
             boolean ended = false;
             switch (next.jsonEventType) {
                 case START_OBJECT:
-                    arrayValues.add(new JSONObject(jsonTokenizer, next));
+                    arrayValues.add(new JSONObject(jsonTokenizer));
                 case END_OBJECT:
                     break;
                 case START_ARRAY:
-                    arrayValues.add(new JSONArray(jsonTokenizer, next));
+                    arrayValues.add(new JSONArray(jsonTokenizer));
                     break;
                 case END_ARRAY:
                     ended = true;
