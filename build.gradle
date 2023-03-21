@@ -1,0 +1,98 @@
+plugins {
+    id 'java'
+    id 'signing'
+    id 'maven-publish'
+}
+
+group 'one.cafebabe'
+version '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+compileJava   {
+    sourceCompatibility = '8'
+    targetCompatibility = '8'
+}
+
+compileTestJava {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
+
+dependencies {
+    compileOnly 'org.slf4j:slf4j-api:2.0.5'
+    compileOnly 'org.jetbrains:annotations:23.1.0'
+
+    testImplementation 'org.json:json:20220924'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    from('module-info/build/classes/java/main') {
+        include "module-info.class"
+        into "META-INF/versions/9"
+    }
+    manifest {
+        attributes 'Multi-Release': 'true'
+    }
+}
+tasks.jar.dependsOn([':module-info:compileJava'])
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'jsonicboom'
+            from components.java
+            pom {
+                name = 'jsonicboom'
+                description = 'jsonicboom'
+                url = 'https://github.com/yusuke/jsonicboom'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'yusuke'
+                        name = 'Yusuke Yamamoto'
+                        email = 'yusuke@mac.com'
+                    }
+                }
+                scm {
+                    url = 'https://github.com/yusuke/jsonicboom'
+                    connection = 'scm:git:git://github.com/yusuke/jsonicboom.git'
+                    developerConnection = 'scm:git:git@github.com:yusuke/jsonicboom.git'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2"
+            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+                username = project.properties['SONATYPE_USERNAME'] ?: "none"
+                password = project.properties['SONATYPE_PASSWORD'] ?: "none"
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
