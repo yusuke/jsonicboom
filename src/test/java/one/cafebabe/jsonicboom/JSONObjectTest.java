@@ -37,6 +37,7 @@ public class JSONObjectTest {
         assertEquals(30, jsonObject.getInt("age"));
         assertTrue(jsonObject.getBoolean("isMarried"));
         JSONArray cars = jsonObject.getJSONArray("hobbies");
+        assert cars != null;
         assertEquals(3, cars.length());
         assertEquals("programing", cars.getString(0));
         assertEquals("video game", cars.getString(1));
