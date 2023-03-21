@@ -1,22 +1,35 @@
 package one.cafebabe.jsonicboom;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class JSONArray {
     private final List<Object> arrayValues = new ArrayList<>();
 
+    JSONArray(String jsonString) {
+        this(new JSONTokenizer(jsonString));
+    }
+
     JSONArray(JSONTokenizer jsonTokenizer) {
-        boolean ended = false;
-        JSONTokenizer.JsonIndices next;
-        while (!ended && null != (next = jsonTokenizer.next())) {
+        this(jsonTokenizer, jsonTokenizer.next());
+    }
+
+    JSONArray(JSONTokenizer jsonTokenizer, JSONTokenizer.JsonIndices next) {
+        if (next.jsonEventType == JSONTokenizer.JsonEventType.START_ARRAY) {
+            next = jsonTokenizer.next();
+        }
+
+        while (null != next) {
+            boolean ended = false;
             switch (next.jsonEventType) {
                 case START_OBJECT:
-                    arrayValues.add(new JSONObject(jsonTokenizer));
+                    arrayValues.add(new JSONObject(jsonTokenizer, next));
                 case END_OBJECT:
                     break;
                 case START_ARRAY:
-                    new JSONArray(jsonTokenizer);
+                    arrayValues.add(new JSONArray(jsonTokenizer, next));
                     break;
                 case END_ARRAY:
                     ended = true;
@@ -24,14 +37,8 @@ public class JSONArray {
                 case KEY_NAME:
                     break;
                 case VALUE_STRING:
-                    arrayValues.add(next.getValue());
-                    break;
                 case VALUE_NUMBER:
-                    arrayValues.add(next.getValue());
-                    break;
                 case VALUE_TRUE:
-                    arrayValues.add(next.getValue());
-                    break;
                 case VALUE_FALSE:
                     arrayValues.add(next.getValue());
                     break;
@@ -39,6 +46,10 @@ public class JSONArray {
                     arrayValues.add(null);
                     break;
             }
+            if (ended) {
+                break;
+            }
+            next = jsonTokenizer.next();
         }
     }
 
@@ -46,7 +57,26 @@ public class JSONArray {
         return arrayValues.size();
     }
 
+    @Nullable
     public String getString(int index) {
         return (String) arrayValues.get(index);
+    }
+
+    public int getInt(int index) {
+        String value = getString(index);
+        if (value == null) {
+            return -1;
+        }
+        return Integer.parseInt(value);
+    }
+
+    @Nullable
+    public JSONArray getJSONArray(int index) {
+        return (JSONArray) arrayValues.get(index);
+    }
+
+    @Nullable
+    public JSONObject getJSONObject(int index) {
+        return (JSONObject) arrayValues.get(index);
     }
 }

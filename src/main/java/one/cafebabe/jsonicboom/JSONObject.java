@@ -10,7 +10,7 @@ public class JSONObject {
     private final Map<String, Object> map = new HashMap<>();
     private final Map<String, JSONArray> arrayMap = new HashMap<>();
 
-    public JSONObject(String jsonString) {
+    JSONObject(String jsonString) {
         this(new JSONTokenizer(jsonString));
     }
 
@@ -23,17 +23,17 @@ public class JSONObject {
             next = jsonTokenizer.next();
         }
         String lastKey = null;
-        boolean ended = false;
-        while (!ended && null != next) {
+        while (null != next) {
+            boolean ended = false;
             switch (next.jsonEventType) {
                 case START_OBJECT:
-                    map.put(lastKey, new JSONObject(jsonTokenizer));
+                    map.put(lastKey, new JSONObject(jsonTokenizer, next));
                     break;
                 case END_OBJECT:
                     ended = true;
                     break;
                 case START_ARRAY:
-                    arrayMap.put(lastKey, new JSONArray(jsonTokenizer));
+                    arrayMap.put(lastKey, new JSONArray(jsonTokenizer, next));
                     break;
                 case END_ARRAY:
                     break;
@@ -55,6 +55,9 @@ public class JSONObject {
                 case VALUE_NULL:
                     map.put(lastKey, null);
                     break;
+            }
+            if (ended) {
+                break;
             }
             next = jsonTokenizer.next();
 

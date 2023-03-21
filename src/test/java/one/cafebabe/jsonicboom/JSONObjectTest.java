@@ -5,10 +5,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class JSONTokenizerObjectTest {
+public class JSONObjectTest {
     @Test
     public void test() {
-        JSONObject jsonObject = new JSONObject("""
+        JSONObject jsonObject = JSON.parseObject("""
                 {
                   "name": "山本 裕介",
                   "description": "This is a test JSON object with Unicode escaped characters: \\u0026 (ampersand), \\u0022 (double quote), and \\u0027 (single quote).",
