@@ -6,17 +6,17 @@ import java.util.List;
 public class JSONArray {
     private final List<Object> arrayValues = new ArrayList<>();
 
-    JSONArray(Boom boom) {
+    JSONArray(JSONTokenizer jsonTokenizer) {
         boolean ended = false;
-        Boom.JsonIndices next;
-        while (!ended && null != (next = boom.next())) {
+        JSONTokenizer.JsonIndices next;
+        while (!ended && null != (next = jsonTokenizer.next())) {
             switch (next.jsonEventType) {
                 case START_OBJECT:
-                    arrayValues.add(new JSONObject(boom));
+                    arrayValues.add(new JSONObject(jsonTokenizer));
                 case END_OBJECT:
                     break;
                 case START_ARRAY:
-                    new JSONArray(boom);
+                    new JSONArray(jsonTokenizer);
                     break;
                 case END_ARRAY:
                     ended = true;

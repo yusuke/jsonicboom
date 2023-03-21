@@ -4,7 +4,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 
-public class Boom {
+public class JSONTokenizer {
     private final String jsonString;
     private final Deque<JsonEventType> state = new ArrayDeque<>();
 
@@ -12,7 +12,7 @@ public class Boom {
     private char currentChar;
     private boolean afterKey = false;
 
-    public Boom(String jsonString) {
+    JSONTokenizer(String jsonString) {
         this.jsonString = jsonString;
     }
 

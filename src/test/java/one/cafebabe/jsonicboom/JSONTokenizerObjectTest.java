@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class JSONObjectTest {
+public class JSONTokenizerObjectTest {
     @Test
     public void test() {
         JSONObject jsonObject = new JSONObject("""
