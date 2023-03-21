@@ -135,7 +135,7 @@ public class Boom {
         VALUE_FALSE, VALUE_NULL
     }
 
-    static class JsonIndices {
+     class JsonIndices {
         final JsonEventType jsonEventType;
         final int startIndex;
         final int endIndex;
@@ -145,6 +145,64 @@ public class Boom {
             this.startIndex = startIndex;
             this.endIndex = endIndex;
         }
+        public String getValue(){
+            return unescapeString(jsonString.substring(startIndex, endIndex));
+        }
+         private String unescapeString(String input) {
+             StringBuilder output = new StringBuilder();
+             int length = input.length();
+             boolean escape = false;
+
+             for (int i = 0; i < length; i++) {
+                 char c = input.charAt(i);
+
+                 if (!escape && c == '\\') {
+                     escape = true;
+                 } else {
+                     if (escape) {
+                         escape = false;
+                         switch (c) {
+                             case '\"':
+                                 output.append('\"');
+                                 break;
+                             case '\\':
+                                 output.append('\\');
+                                 break;
+                             case '/':
+                                 output.append('/');
+                                 break;
+                             case 'b':
+                                 output.append('\b');
+                                 break;
+                             case 'f':
+                                 output.append('\f');
+                                 break;
+                             case 'n':
+                                 output.append('\n');
+                                 break;
+                             case 'r':
+                                 output.append('\r');
+                                 break;
+                             case 't':
+                                 output.append('\t');
+                                 break;
+                             case 'u':
+                                 String unicode = input.substring(i + 1, i + 5);
+                                 int unicodeValue = Integer.parseInt(unicode, 16);
+                                 output.append((char) unicodeValue);
+                                 i += 4;
+                                 break;
+                             default:
+                                 break;
+                         }
+                     } else {
+                         output.append(c);
+                     }
+                 }
+             }
+
+             return output.toString();
+         }
 
         @Override
         public boolean equals(Object o) {
