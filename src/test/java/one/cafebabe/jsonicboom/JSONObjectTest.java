@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class JSONObjectTest {
     @Test
     public void test() {
-        JSONObject jsonObject = JSON.parseObject("""
+        String json = """
                 {
                   "name": "山本 裕介",
                   "description": "This is a test JSON object with Unicode escaped characters: \\u0026 (ampersand), \\u0022 (double quote), and \\u0027 (single quote).",
@@ -29,19 +29,26 @@ public class JSONObjectTest {
                     "state": "CA",
                     "zip": "1700012"
                   }
-                }
-                """);
+                }""";
+        JSONObject jsonObject = JSON.parseObject(json);
+        assertEquals(json, jsonObject.toString());
         assertEquals("山本 裕介", jsonObject.getString("name"));
         assertEquals("""
-        This is a test JSON object with Unicode escaped characters: & (ampersand), " (double quote), and ' (single quote).""", jsonObject.getString("description"));
+                This is a test JSON object with Unicode escaped characters: & (ampersand), " (double quote), and ' (single quote).""", jsonObject.getString("description"));
         assertEquals(30, jsonObject.getInt("age"));
         assertTrue(jsonObject.getBoolean("isMarried"));
-        JSONArray cars = jsonObject.getJSONArray("hobbies");
-        assert cars != null;
-        assertEquals(3, cars.length());
-        assertEquals("programing", cars.getString(0));
-        assertEquals("video game", cars.getString(1));
-        assertEquals("archery", cars.getString(2));
+        JSONArray hobbies = jsonObject.getJSONArray("hobbies");
+        assert hobbies != null;
+        assertEquals("""
+                [
+                    "programing",
+                    "video game",
+                    "archery"
+                  ]""", hobbies.toString());
+        assertEquals(3, hobbies.length());
+        assertEquals("programing", hobbies.getString(0));
+        assertEquals("video game", hobbies.getString(1));
+        assertEquals("archery", hobbies.getString(2));
         assertEquals("👍👍👍", jsonObject.getString("🍕_rating"));
         assertNull(jsonObject.get("notes"));
         JSONObject address = jsonObject.get("address");
@@ -51,7 +58,7 @@ public class JSONObjectTest {
         assertEquals("CA", address.getString("state"));
         assertEquals("1700012", address.getString("zip"));
 
-        assertThrows(IndexOutOfBoundsException.class, ()->    cars.getString(3));
+        assertThrows(IndexOutOfBoundsException.class, () -> hobbies.getString(3));
 
     }
 }

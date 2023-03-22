@@ -4,29 +4,35 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class JSONObject {
 
     private final Map<String, Object> map = new HashMap<>();
     private final Map<String, JSONArray> arrayMap = new HashMap<>();
 
-    JSONObject(JSONTokenizer jsonTokenizer) {
-        JSONTokenizer.JsonIndices next = jsonTokenizer.next();
-        if (next.jsonEventType == JSONTokenizer.JsonEventType.START_OBJECT) {
-            next = jsonTokenizer.next();
-        }
+    private final String jsonString;
+    private final int startIndex;
+    private final int endIndex;
+
+    JSONObject(JSONTokenizer jsonTokenizer, JSONTokenizer.JsonIndices next) {
+        jsonString = jsonTokenizer.jsonString;
+        startIndex = next.startIndex;
+        next = jsonTokenizer.next();
         String lastKey = null;
+        int endIndex = -1;
         while (null != next) {
             boolean ended = false;
             switch (next.jsonEventType) {
                 case START_OBJECT:
-                    map.put(lastKey, new JSONObject(jsonTokenizer));
+                    map.put(lastKey, new JSONObject(jsonTokenizer, next));
                     break;
                 case END_OBJECT:
                     ended = true;
+                    endIndex = next.endIndex;
                     break;
                 case START_ARRAY:
-                    arrayMap.put(lastKey, new JSONArray(jsonTokenizer));
+                    arrayMap.put(lastKey, new JSONArray(jsonTokenizer, next));
                     break;
                 case END_ARRAY:
                     break;
@@ -53,8 +59,8 @@ public class JSONObject {
                 break;
             }
             next = jsonTokenizer.next();
-
         }
+        this.endIndex = endIndex;
     }
 
     @Nullable
@@ -86,5 +92,23 @@ public class JSONObject {
     @Nullable
     public JSONObject get(String name) {
         return (JSONObject) map.get(name);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        JSONObject that = (JSONObject) o;
+        return startIndex == that.startIndex && endIndex == that.endIndex && Objects.equals(map, that.map) && Objects.equals(arrayMap, that.arrayMap) && Objects.equals(jsonString, that.jsonString);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(map, arrayMap, jsonString, startIndex, endIndex);
+    }
+
+    @Override
+    public String toString() {
+        return jsonString.substring(startIndex, endIndex);
     }
 }

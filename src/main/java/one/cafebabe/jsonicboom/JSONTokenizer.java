@@ -5,7 +5,7 @@ import java.util.Deque;
 import java.util.Objects;
 
 public class JSONTokenizer {
-    private final String jsonString;
+    final String jsonString;
     private final Deque<JsonEventType> state = new ArrayDeque<>();
 
     private int currentIndex = 0;

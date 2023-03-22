@@ -4,27 +4,32 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class JSONArray {
     private final List<Object> arrayValues = new ArrayList<>();
+    private final String jsonString;
+    private final int startIndex;
+    private final int endIndex;
 
-    JSONArray(JSONTokenizer jsonTokenizer) {
-        JSONTokenizer.JsonIndices next = jsonTokenizer.next();
-        if (next.jsonEventType == JSONTokenizer.JsonEventType.START_ARRAY) {
-            next = jsonTokenizer.next();
-        }
+    JSONArray(JSONTokenizer jsonTokenizer, JSONTokenizer.JsonIndices next) {
+        jsonString = jsonTokenizer.jsonString;
+        startIndex = next.startIndex;
+        next = jsonTokenizer.next();
+        int endIndex = -1;
         while (null != next) {
             boolean ended = false;
             switch (next.jsonEventType) {
                 case START_OBJECT:
-                    arrayValues.add(new JSONObject(jsonTokenizer));
+                    arrayValues.add(new JSONObject(jsonTokenizer, next));
                 case END_OBJECT:
                     break;
                 case START_ARRAY:
-                    arrayValues.add(new JSONArray(jsonTokenizer));
+                    arrayValues.add(new JSONArray(jsonTokenizer, next));
                     break;
                 case END_ARRAY:
                     ended = true;
+                    endIndex = next.endIndex;
                     break;
                 case KEY_NAME:
                     break;
@@ -43,6 +48,7 @@ public class JSONArray {
             }
             next = jsonTokenizer.next();
         }
+        this.endIndex = endIndex;
     }
 
     public int length() {
@@ -70,5 +76,23 @@ public class JSONArray {
     @Nullable
     public JSONObject getJSONObject(int index) {
         return (JSONObject) arrayValues.get(index);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        JSONArray jsonArray = (JSONArray) o;
+        return startIndex == jsonArray.startIndex && endIndex == jsonArray.endIndex && Objects.equals(arrayValues, jsonArray.arrayValues) && Objects.equals(jsonString, jsonArray.jsonString);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(arrayValues, jsonString, startIndex, endIndex);
+    }
+
+    @Override
+    public String toString() {
+        return jsonString.substring(startIndex, endIndex);
     }
 }

@@ -5,11 +5,13 @@ public class JSON {
     }
 
     public static JSONObject parseObject(String json) {
-        return new JSONObject(new JSONTokenizer(json));
+        JSONTokenizer jsonTokenizer = new JSONTokenizer(json);
+        return new JSONObject(jsonTokenizer, jsonTokenizer.next());
     }
 
     public static JSONArray parseArray(String json) {
-        return new JSONArray(new JSONTokenizer(json));
+        JSONTokenizer jsonTokenizer = new JSONTokenizer(json);
+        return new JSONArray(jsonTokenizer, jsonTokenizer.next());
     }
 
 }
