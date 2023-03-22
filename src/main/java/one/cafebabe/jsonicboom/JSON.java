@@ -1,6 +1,6 @@
 package one.cafebabe.jsonicboom;
 
-public class JSON {
+public final class JSON {
     private JSON() {
     }
 

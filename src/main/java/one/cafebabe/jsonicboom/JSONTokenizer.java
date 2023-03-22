@@ -136,19 +136,26 @@ public class JSONTokenizer {
         VALUE_FALSE, VALUE_NULL
     }
 
-    class JsonIndices {
+    public final class JsonIndices {
         final JsonEventType jsonEventType;
         final int startIndex;
         final int endIndex;
+        private String value = null;
 
-        public JsonIndices(JsonEventType jsonEventType, int startIndex, int endIndex) {
+        JsonIndices(JsonEventType jsonEventType, int startIndex, int endIndex) {
             this.jsonEventType = jsonEventType;
             this.startIndex = startIndex;
             this.endIndex = endIndex;
         }
 
         public String getValue() {
-            return unescapeString(jsonString.substring(startIndex, endIndex));
+            if (jsonEventType == JsonEventType.VALUE_NULL) {
+                return null;
+            }
+            if (value == null) {
+                value = unescapeString(jsonString.substring(startIndex, endIndex));
+            }
+            return value;
         }
 
         private String unescapeString(String input) {

@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class JSONObject {
+public final class JSONObject {
 
     private final Map<String, Object> map = new HashMap<>();
     private final Map<String, JSONArray> arrayMap = new HashMap<>();
@@ -40,19 +40,19 @@ public class JSONObject {
                     lastKey = next.getValue();
                     break;
                 case VALUE_STRING:
-                    map.put(lastKey, next.getValue());
+                    map.put(lastKey, next);
                     break;
                 case VALUE_NUMBER:
-                    map.put(lastKey, next.getValue());
+                    map.put(lastKey, next);
                     break;
                 case VALUE_TRUE:
-                    map.put(lastKey, next.getValue());
+                    map.put(lastKey, next);
                     break;
                 case VALUE_FALSE:
-                    map.put(lastKey, next.getValue());
+                    map.put(lastKey, next);
                     break;
                 case VALUE_NULL:
-                    map.put(lastKey, null);
+                    map.put(lastKey, next);
                     break;
             }
             if (ended) {
@@ -65,7 +65,8 @@ public class JSONObject {
 
     @Nullable
     public String getString(String name) {
-        return (String) map.get(name);
+        JSONTokenizer.JsonIndices jsonIndices = (JSONTokenizer.JsonIndices) map.get(name);
+        return jsonIndices.getValue();
     }
 
     public int getInt(String name) {
@@ -91,7 +92,14 @@ public class JSONObject {
 
     @Nullable
     public JSONObject get(String name) {
-        return (JSONObject) map.get(name);
+        Object o = map.get(name);
+        if (o instanceof JSONTokenizer.JsonIndices &&
+            ((JSONTokenizer.JsonIndices) o).jsonEventType == JSONTokenizer.JsonEventType.VALUE_NULL) {
+            return null;
+        } else if (o instanceof JSONObject) {
+            return (JSONObject) o;
+        }
+        throw new UnsupportedOperationException(String.format("value for %s is not JSONObject: %s", name, o));
     }
 
     @Override

@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class JSONArray {
+public final class JSONArray {
     private final List<Object> arrayValues = new ArrayList<>();
     private final String jsonString;
     private final int startIndex;
@@ -37,10 +37,8 @@ public class JSONArray {
                 case VALUE_NUMBER:
                 case VALUE_TRUE:
                 case VALUE_FALSE:
-                    arrayValues.add(next.getValue());
-                    break;
                 case VALUE_NULL:
-                    arrayValues.add(null);
+                    arrayValues.add(next);
                     break;
             }
             if (ended) {
@@ -57,7 +55,8 @@ public class JSONArray {
 
     @Nullable
     public String getString(int index) {
-        return (String) arrayValues.get(index);
+        JSONTokenizer.JsonIndices jsonIndices = (JSONTokenizer.JsonIndices) arrayValues.get(index);
+        return jsonIndices.getValue();
     }
 
     public int getInt(int index) {
