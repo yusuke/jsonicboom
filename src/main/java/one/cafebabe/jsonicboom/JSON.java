@@ -6,12 +6,20 @@ public final class JSON {
 
     public static JSONObject parseObject(String json) {
         JSONTokenizer jsonTokenizer = new JSONTokenizer(json);
-        return new JSONObject(jsonTokenizer, jsonTokenizer.next());
+        JSONObject jsonObject = new JSONObject(jsonTokenizer, jsonTokenizer.next());
+        if (jsonTokenizer.next() != null) {
+            throw new IllegalJSONFormatException("Illegal JSON format");
+        }
+        return jsonObject;
     }
 
     public static JSONArray parseArray(String json) {
         JSONTokenizer jsonTokenizer = new JSONTokenizer(json);
-        return new JSONArray(jsonTokenizer, jsonTokenizer.next());
+        JSONArray jsonArray = new JSONArray(jsonTokenizer, jsonTokenizer.next());
+        if (jsonTokenizer.next() != null) {
+            throw new IllegalJSONFormatException("Illegal JSON format");
+        }
+        return jsonArray;
     }
 
 }

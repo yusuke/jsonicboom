@@ -18,14 +18,18 @@ public final class JSONObject {
     JSONObject(JSONTokenizer jsonTokenizer, JSONTokenizer.JsonIndices next) {
         jsonString = jsonTokenizer.jsonString;
         startIndex = next.startIndex;
-        next = jsonTokenizer.next();
+        boolean first = true;
         String lastKey = null;
         int endIndex = -1;
         while (null != next) {
             boolean ended = false;
             switch (next.jsonEventType) {
                 case START_OBJECT:
-                    map.put(lastKey, new JSONObject(jsonTokenizer, next));
+                    if(first){
+                        first = false;
+                    }else{
+                        map.put(lastKey, new JSONObject(jsonTokenizer, next));
+                    }
                     break;
                 case END_OBJECT:
                     ended = true;

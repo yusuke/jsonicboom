@@ -7,6 +7,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class JSONObjectTest {
     @Test
+    public void testSimple(){
+        String json = """
+                {
+                  "name": "山本 裕介",
+                  "address": {
+                    "zip": "1700012"
+                  }
+                }""";
+
+        JSONObject jsonObject = JSON.parseObject(json);
+
+    }
+
+    @Test
     public void test() {
         String json = """
                 {
