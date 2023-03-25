@@ -6,7 +6,24 @@ import java.util.Objects;
 
 public class JSONTokenizer {
     final String jsonString;
-    private final Deque<JsonEventType> state = new ArrayDeque<>();
+    private final JsonNestState state = new JsonNestState();
+    static class JsonNestState{
+        private final Deque<JsonEventType> queue = new ArrayDeque<>();
+        void push(JsonEventType eventType){
+            queue.push(eventType);
+        }
+        void pop(){
+            queue.pop();
+        }
+
+        public int size() {
+            return queue.size();
+        }
+        boolean isLastState(JsonEventType eventType) {
+            return queue.size() != 0 && queue.getFirst() == eventType;
+        }
+
+    }
 
     private int currentIndex = 0;
     private char currentChar;
@@ -37,17 +54,17 @@ public class JSONTokenizer {
 
         switch (currentChar) {
             case '{':
-                if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
+                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
                     state.pop();
                 }
                 currentIndex++;
                 state.push(JsonEventType.START_OBJECT);
                 return new JsonIndices(JsonEventType.START_OBJECT, startIndex, currentIndex);
             case '}':
-                if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
+                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
                     throw new IllegalJSONFormatException("expecting value, got '}'", jsonString, currentIndex);
                 }
-                if (isLastState(JsonEventType.START_ARRAY) || !isLastState(JsonEventType.START_OBJECT)) {
+                if (state.isLastState(JsonEventType.START_ARRAY) || !state.isLastState(JsonEventType.START_OBJECT)) {
                     throw new IllegalJSONFormatException("expecting '{' or '[', got '}'", jsonString, currentIndex);
                 }
                 currentIndex++;
@@ -55,16 +72,16 @@ public class JSONTokenizer {
                 return new JsonIndices(JsonEventType.END_OBJECT, startIndex, currentIndex);
             case '[':
                 currentIndex++;
-                if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
+                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
                     state.pop();
                 }
                 state.push(JsonEventType.START_ARRAY);
                 return new JsonIndices(JsonEventType.START_ARRAY, startIndex, currentIndex);
             case ']':
-                if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
+                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
                     throw new IllegalJSONFormatException("expecting value, got ']'", jsonString, currentIndex);
                 }
-                if (isLastState(JsonEventType.START_OBJECT) || !isLastState(JsonEventType.START_ARRAY)) {
+                if (state.isLastState(JsonEventType.START_OBJECT) || !state.isLastState(JsonEventType.START_ARRAY)) {
                     throw new IllegalJSONFormatException("expecting '{' or '[', got ']'", jsonString, currentIndex);
                 }
                 currentIndex++;
@@ -113,17 +130,17 @@ public class JSONTokenizer {
                     }
                 } while (c1 != '\n' && c1 != '\"');
                 currentIndex++;
-                if (isLastState(JsonEventType.COLON)) {
+                if (state.isLastState(JsonEventType.COLON)) {
                     state.pop();
                     return new JsonIndices(JsonEventType.VALUE_STRING, startIndex + 1, currentIndex - 1);
-                } else if (isLastState(JsonEventType.COMMA)) {
+                } else if (state.isLastState(JsonEventType.COMMA)) {
                     state.pop();
-                    if (isLastState(JsonEventType.START_ARRAY)) {
+                    if (state.isLastState(JsonEventType.START_ARRAY)) {
                         return new JsonIndices(JsonEventType.VALUE_STRING, startIndex + 1, currentIndex - 1);
                     } else {
                         return new JsonIndices(JsonEventType.KEY_NAME, startIndex + 1, currentIndex - 1);
                     }
-                } else if (isLastState(JsonEventType.START_ARRAY)) {
+                } else if (state.isLastState(JsonEventType.START_ARRAY)) {
                     return new JsonIndices(JsonEventType.VALUE_STRING, startIndex + 1, currentIndex - 1);
                 } else {
                     return new JsonIndices(JsonEventType.KEY_NAME, startIndex + 1, currentIndex - 1);
@@ -159,12 +176,12 @@ public class JSONTokenizer {
                     }
                     currentIndex++;
                 }
-                if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
+                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
                     state.pop();
                 }
                 return new JsonIndices(JsonEventType.VALUE_NUMBER, startIndex, currentIndex);
             case 't':
-                if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
+                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
                     state.pop();
                 }
                 if (jsonString.indexOf("rue", currentIndex + 1) == -1) {
@@ -173,7 +190,7 @@ public class JSONTokenizer {
                 currentIndex += 4;
                 return new JsonIndices(JsonEventType.VALUE_TRUE, startIndex, currentIndex);
             case 'f':
-                if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
+                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
                     state.pop();
                 }
                 if (jsonString.indexOf("alse", currentIndex + 1) == -1) {
@@ -183,7 +200,7 @@ public class JSONTokenizer {
                 currentIndex += 5;
                 return new JsonIndices(JsonEventType.VALUE_FALSE, startIndex, currentIndex);
             case 'n':
-                if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
+                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
                     state.pop();
                 }
                 if (jsonString.indexOf("ull", currentIndex + 1) == -1) {
@@ -195,10 +212,6 @@ public class JSONTokenizer {
             default:
                 throw new IllegalJSONFormatException("Unexpected character found: " + currentChar, jsonString, currentIndex);
         }
-    }
-
-    boolean isLastState(JsonEventType eventType) {
-        return state.size() != 0 && state.getFirst() == eventType;
     }
 
     private void skipWhitespaces() {
