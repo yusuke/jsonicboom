@@ -145,14 +145,7 @@ public class JSONTokenizer {
                 if (currentChar == '0' && jsonString.charAt(currentIndex) != '.') {
                     throw new IllegalJSONFormatException("leading zeros are not allowed", jsonString, currentIndex - 1);
                 }
-                while (jsonString.charAt(currentIndex) != ' ' &&
-                       jsonString.charAt(currentIndex) != '\t' &&
-                       jsonString.charAt(currentIndex) != '\n' &&
-                       jsonString.charAt(currentIndex) != '\r' &&
-                       jsonString.charAt(currentIndex) != ',' &&
-                       jsonString.charAt(currentIndex) != ']' &&
-                       jsonString.charAt(currentIndex) != '}'
-                ) {
+                while (" \t\n\r,]}".indexOf(jsonString.charAt(currentIndex)) == -1) {
                     // current character must be number, comma
                     char c = jsonString.charAt(currentIndex);
                     if (c == '.') {
