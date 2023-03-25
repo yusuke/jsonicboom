@@ -174,9 +174,7 @@ public class JSONTokenizer {
                 if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
                     state.pop();
                 }
-                if (jsonString.charAt(currentIndex + 1) != 'r' ||
-                    jsonString.charAt(currentIndex + 2) != 'u' ||
-                    jsonString.charAt(currentIndex + 3) != 'e') {
+                if (jsonString.indexOf("rue", currentIndex + 1) == -1) {
                     throw new IllegalJSONFormatException("expecting 'true' got " + jsonString.substring(currentIndex, currentIndex + 4));
                 }
                 currentIndex += 4;
@@ -185,10 +183,7 @@ public class JSONTokenizer {
                 if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
                     state.pop();
                 }
-                if (jsonString.charAt(currentIndex + 1) != 'a' ||
-                    jsonString.charAt(currentIndex + 2) != 'l' ||
-                    jsonString.charAt(currentIndex + 3) != 's' ||
-                    jsonString.charAt(currentIndex + 4) != 'e') {
+                if (jsonString.indexOf("alse", currentIndex + 1) == -1) {
                     throw new IllegalJSONFormatException("expecting 'false' got " + jsonString.substring(currentIndex, currentIndex + 5));
                 }
 
@@ -198,9 +193,7 @@ public class JSONTokenizer {
                 if (isLastState(JsonEventType.COMMA) || isLastState(JsonEventType.COLON)) {
                     state.pop();
                 }
-                if (jsonString.charAt(currentIndex + 1) != 'u' ||
-                    jsonString.charAt(currentIndex + 2) != 'l' ||
-                    jsonString.charAt(currentIndex + 3) != 'l') {
+                if (jsonString.indexOf("ull", currentIndex + 1) == -1) {
                     throw new IllegalJSONFormatException("expecting 'null', got '" + jsonString.substring(currentIndex, currentIndex + 4) + "'", jsonString, currentIndex);
                 }
                 currentIndex += 4;
@@ -261,18 +254,17 @@ public class JSONTokenizer {
                 return null;
             }
             if (value == null) {
-                value = unescapeString(jsonString.substring(startIndex, endIndex));
+                value = unescapeString(startIndex, endIndex);
             }
             return value;
         }
 
-        private String unescapeString(String input) {
+        private String unescapeString(int startIndex, int endIndex) {
             StringBuilder output = new StringBuilder();
-            int length = input.length();
             boolean escape = false;
 
-            for (int i = 0; i < length; i++) {
-                char c = input.charAt(i);
+            for (int i = startIndex; i < endIndex; i++) {
+                char c = jsonString.charAt(i);
 
                 if (!escape && c == '\\') {
                     escape = true;
@@ -305,7 +297,7 @@ public class JSONTokenizer {
                                 output.append('\t');
                                 break;
                             case 'u':
-                                String unicode = input.substring(i + 1, i + 5);
+                                String unicode = jsonString.substring(i + 1, i + 5);
                                 int unicodeValue = Integer.parseInt(unicode, 16);
                                 output.append((char) unicodeValue);
                                 i += 4;
