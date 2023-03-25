@@ -1,9 +1,6 @@
 package one.cafebabe.jsonicboom;
 
 public class IllegalJSONFormatException extends RuntimeException {
-    public IllegalJSONFormatException() {
-    }
-
     public IllegalJSONFormatException(String message, String jsonString, int index) {
         super(composeMessage(message, jsonString, index));
     }
@@ -33,15 +30,4 @@ public class IllegalJSONFormatException extends RuntimeException {
         super(message);
     }
 
-    public IllegalJSONFormatException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public IllegalJSONFormatException(Throwable cause) {
-        super(cause);
-    }
-
-    public IllegalJSONFormatException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
-    }
 }

@@ -17,7 +17,7 @@ public class JSONTokenizer {
 
     void ensureFullyClosed() throws IllegalJSONFormatException {
         if (state.size() != 0) {
-            throw new IllegalJSONFormatException();
+            throw new IllegalJSONFormatException("not closed", jsonString, currentIndex);
         }
 
     }
