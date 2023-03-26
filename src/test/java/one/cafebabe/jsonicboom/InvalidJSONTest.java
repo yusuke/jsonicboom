@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class InvalidJSONTest   {
     @Test
     void extraClosingBrace(){
@@ -206,11 +207,34 @@ public class InvalidJSONTest   {
     @Test
     void unnecessaryComma() {
         assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
+                {,"key1": "value1","key2": "value2"}
+                """));
+        assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
                 {"key1": "value1",, "key2": "value2"}
+                """));
+        assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
+                {"key1": "value1", "key2": "value2",}
+                """));
+        assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
+                [,"value1","value2"}
+                """));
+        assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
+                ["value1",,"value2"}
+                """));
+        assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
+                ["value1","value2",}
+                """));
+    }
+    @Test
+    void withoutComma() {
+        assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
+                {"key1": "value1" "key2": "value2"}
+                """));
+        assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
+                ["value1"  "value2"
                 """));
     }
 
-    // 文字エンコーディングの問題のテストケース
     @Test
     void invalidUnicodeEscapeSequence() {
         assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""

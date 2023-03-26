@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class JSONObjectTest {
     @Test
-    public void testSimple(){
+    public void testSimple() {
         String json = """
                 {
                   "name": "山本 裕介",
@@ -16,7 +16,7 @@ public class JSONObjectTest {
                   }
                 }""";
 
-        JSONObject jsonObject = JSON.parseObject(json);
+        @SuppressWarnings("unused") JSONObject jsonObject = JSON.parseObject(json);
 
     }
 

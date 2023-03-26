@@ -2,24 +2,182 @@ package one.cafebabe.jsonicboom;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.Objects;
 
 public class JSONTokenizer {
     final String jsonString;
     private final JsonNestState state = new JsonNestState();
-    static class JsonNestState{
+
+    class JsonNestState {
+
+        boolean insideObject = false;
+        boolean insideArray = false;
         private final Deque<JsonEventType> queue = new ArrayDeque<>();
-        void push(JsonEventType eventType){
-            queue.push(eventType);
+
+        void push(JsonEventType eventType) {
+            switch (eventType) {
+                case START_OBJECT:
+                    if (insideArray) {
+                        ensurePreviousTokenIs(false, JsonEventType.START_ARRAY, JsonEventType.COMMA);
+                    } else {
+                        ensurePreviousTokenIs(true, JsonEventType.COLON);
+                    }
+                    insideArray = false;
+                    insideObject = true;
+                    break;
+                case END_OBJECT:
+                    if (insideArray) {
+                        throw new IllegalJSONFormatException("Illegal JSON format. Expecting ']', got '}'", jsonString, currentIndex);
+                    }
+                    if (!insideObject) {
+                        throw new IllegalJSONFormatException("Illegal JSON format. Got '}' without '{'", jsonString, currentIndex);
+                    }
+                    ensurePreviousTokenIs(false,
+                            JsonEventType.START_OBJECT,
+                            JsonEventType.VALUE_STRING,
+                            JsonEventType.VALUE_NUMBER,
+                            JsonEventType.VALUE_TRUE,
+                            JsonEventType.VALUE_FALSE,
+                            JsonEventType.VALUE_NULL);
+                    // remove stack until START_OBJECT event
+                    //noinspection StatementWithEmptyBody
+                    while (queue.pop() != JsonEventType.START_OBJECT) {
+                        // do nothing
+                    }
+                    if (isLastToken(JsonEventType.COLON) || isLastToken(JsonEventType.COMMA)) {
+                        // put VALUE_STRING instead of OBJECT
+                        queue.push(JsonEventType.VALUE_STRING);
+                    }
+                    checkInsideObjectOrArray();
+                    break;
+                case START_ARRAY:
+                    if (insideArray) {
+                        ensurePreviousTokenIs(false, JsonEventType.START_ARRAY, JsonEventType.COMMA);
+                    } else {
+                        ensurePreviousTokenIs(true, JsonEventType.COLON);
+                    }
+                    insideObject = false;
+                    insideArray = true;
+                    break;
+                case END_ARRAY:
+                    if (insideObject) {
+                        throw new IllegalJSONFormatException("Illegal JSON format. Expecting '}', got ']'", jsonString, currentIndex);
+                    }
+                    if (!insideArray) {
+                        throw new IllegalJSONFormatException("Illegal JSON format. Got ']' without '['", jsonString, currentIndex);
+                    }
+                    ensurePreviousTokenIs(false,
+                            JsonEventType.START_ARRAY,
+                            JsonEventType.VALUE_STRING,
+                            JsonEventType.VALUE_NUMBER,
+                            JsonEventType.VALUE_TRUE,
+                            JsonEventType.VALUE_FALSE,
+                            JsonEventType.VALUE_NULL);
+
+                    // remove stack until START_ARRAY event
+                    //noinspection StatementWithEmptyBody
+                    while (queue.pop() != JsonEventType.START_ARRAY) {
+                        // do nothing
+                    }
+                    if (isLastToken(JsonEventType.COLON) || isLastToken(JsonEventType.COMMA)) {
+                        // put VALUE_STRING instead of OBJECT
+                        queue.push(JsonEventType.VALUE_STRING);
+                    }
+                    checkInsideObjectOrArray();
+
+                    break;
+                case COMMA:
+                    if (insideArray) {
+                        ensurePreviousTokenIs(false,
+                                JsonEventType.START_ARRAY,
+                                JsonEventType.VALUE_STRING,
+                                JsonEventType.VALUE_NUMBER,
+                                JsonEventType.VALUE_TRUE,
+                                JsonEventType.VALUE_FALSE,
+                                JsonEventType.VALUE_NULL);
+                    } else if (insideObject) {
+                        ensurePreviousTokenIs(false,
+                                JsonEventType.VALUE_STRING,
+                                JsonEventType.VALUE_NUMBER,
+                                JsonEventType.VALUE_TRUE,
+                                JsonEventType.VALUE_FALSE,
+                                JsonEventType.VALUE_NULL);
+                    } else {
+                        throw new IllegalJSONFormatException("Illegal JSON format", jsonString, currentIndex);
+                    }
+                    break;
+                case COLON:
+                    ensurePreviousTokenIs(false, JsonEventType.KEY_NAME);
+                    break;
+                case KEY_NAME:
+                    if (!insideObject) {
+                        throw new IllegalJSONFormatException("Illegal JSON format", jsonString, currentIndex);
+                    }
+                    ensurePreviousTokenIs(false, JsonEventType.START_OBJECT, JsonEventType.COMMA);
+                    break;
+                case VALUE_STRING:
+                case VALUE_NUMBER:
+                case VALUE_TRUE:
+                case VALUE_FALSE:
+                case VALUE_NULL:
+                    if (insideArray) {
+                        ensurePreviousTokenIs(false, JsonEventType.START_ARRAY, JsonEventType.COMMA);
+                    } else if (insideObject) {
+                        ensurePreviousTokenIs(false, JsonEventType.COLON);
+                    } else {
+                        throw new IllegalJSONFormatException("Illegal JSON format", jsonString, currentIndex);
+                    }
+                    queue.push(JsonEventType.VALUE_STRING);
+                    break;
+            }
+            if (eventType != JsonEventType.END_OBJECT && eventType != JsonEventType.END_ARRAY) {
+                queue.push(eventType);
+            }
+
         }
-        void pop(){
-            queue.pop();
+
+        private void checkInsideObjectOrArray() {
+            insideObject = false;
+            insideArray = false;
+            if (queue.size() == 0) {
+                return;
+            }
+            Iterator<JsonEventType> iterator = queue.iterator();
+            JsonEventType next;
+            while (null != (next = iterator.next())) {
+                if (next == JsonEventType.START_OBJECT) {
+                    insideObject = true;
+                    break;
+                }
+                if (next == JsonEventType.START_ARRAY) {
+                    insideArray = true;
+                    break;
+                }
+            }
+        }
+
+        void ensurePreviousTokenIs(boolean acceptEmpty, JsonEventType... eventTypes) {
+            if (queue.size() == 0) {
+                if (acceptEmpty) {
+                    return;
+                } else {
+                    throw new IllegalJSONFormatException("illegal JSON format", jsonString, currentIndex);
+                }
+            }
+            for (JsonEventType eventType : eventTypes) {
+                if (queue.getFirst() == eventType) {
+                    return;
+                }
+            }
+            throw new IllegalJSONFormatException("illegal JSON format", jsonString, currentIndex);
         }
 
         public int size() {
             return queue.size();
         }
-        boolean isLastState(JsonEventType eventType) {
+
+        boolean isLastToken(JsonEventType eventType) {
             return queue.size() != 0 && queue.getFirst() == eventType;
         }
 
@@ -51,53 +209,27 @@ public class JSONTokenizer {
         }
 
         int startIndex = currentIndex;
-
+        currentIndex++;
         switch (currentChar) {
             case '{':
-                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
-                    state.pop();
-                }
-                currentIndex++;
                 state.push(JsonEventType.START_OBJECT);
                 return new JsonIndices(JsonEventType.START_OBJECT, startIndex, currentIndex);
             case '}':
-                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
-                    throw new IllegalJSONFormatException("expecting value, got '}'", jsonString, currentIndex);
-                }
-                if (state.isLastState(JsonEventType.START_ARRAY) || !state.isLastState(JsonEventType.START_OBJECT)) {
-                    throw new IllegalJSONFormatException("expecting '{' or '[', got '}'", jsonString, currentIndex);
-                }
-                currentIndex++;
-                state.pop();
+                state.push(JsonEventType.END_OBJECT);
                 return new JsonIndices(JsonEventType.END_OBJECT, startIndex, currentIndex);
             case '[':
-                currentIndex++;
-                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
-                    state.pop();
-                }
                 state.push(JsonEventType.START_ARRAY);
                 return new JsonIndices(JsonEventType.START_ARRAY, startIndex, currentIndex);
             case ']':
-                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
-                    throw new IllegalJSONFormatException("expecting value, got ']'", jsonString, currentIndex);
-                }
-                if (state.isLastState(JsonEventType.START_OBJECT) || !state.isLastState(JsonEventType.START_ARRAY)) {
-                    throw new IllegalJSONFormatException("expecting '{' or '[', got ']'", jsonString, currentIndex);
-                }
-                currentIndex++;
-                state.pop();
+                state.push(JsonEventType.END_ARRAY);
                 return new JsonIndices(JsonEventType.END_ARRAY, startIndex, currentIndex);
-
             case ':':
-                currentIndex++;
                 state.push(JsonEventType.COLON);
                 return new JsonIndices(JsonEventType.COLON, startIndex, currentIndex);
             case ',':
-                currentIndex++;
                 state.push(JsonEventType.COMMA);
                 return new JsonIndices(JsonEventType.COMMA, startIndex, currentIndex);
             case '\"':
-                currentIndex++;
                 char c1 = jsonString.charAt(currentIndex);
                 do {
                     if (c1 == '\\') {
@@ -105,7 +237,7 @@ public class JSONTokenizer {
                         c1 = jsonString.charAt(currentIndex);
                         //'"' '\' '/' 'b' 'f' 'n' 'r' 't' 'u' hex hex hex hex
                         if ("\"\\/bfnrtu".indexOf(c1) != -1) {
-                            if(c1 == 'u'){
+                            if (c1 == 'u') {
                                 if (jsonString.length() < currentIndex + 4) {
                                     throw new IllegalJSONFormatException("invalid escape sequence", jsonString, currentIndex);
                                 }
@@ -116,33 +248,27 @@ public class JSONTokenizer {
                                     }
                                 }
                                 currentIndex += 4;
-                            }else{
+                            } else {
                                 currentIndex++;
                             }
-                        }else{
+                        } else {
                             throw new IllegalJSONFormatException("invalid escape sequence", jsonString, currentIndex);
                         }
-                        c1 = jsonString.charAt(currentIndex);
 
                     } else {
                         currentIndex++;
-                        c1 = jsonString.charAt(currentIndex);
                     }
+                    c1 = jsonString.charAt(currentIndex);
                 } while (c1 != '\n' && c1 != '\"');
                 currentIndex++;
-                if (state.isLastState(JsonEventType.COLON)) {
-                    state.pop();
+                if (state.isLastToken(JsonEventType.COLON)) {
+                    state.push(JsonEventType.VALUE_STRING);
                     return new JsonIndices(JsonEventType.VALUE_STRING, startIndex + 1, currentIndex - 1);
-                } else if (state.isLastState(JsonEventType.COMMA)) {
-                    state.pop();
-                    if (state.isLastState(JsonEventType.START_ARRAY)) {
-                        return new JsonIndices(JsonEventType.VALUE_STRING, startIndex + 1, currentIndex - 1);
-                    } else {
-                        return new JsonIndices(JsonEventType.KEY_NAME, startIndex + 1, currentIndex - 1);
-                    }
-                } else if (state.isLastState(JsonEventType.START_ARRAY)) {
+                } else if (state.insideArray) {
+                    state.push(JsonEventType.VALUE_STRING);
                     return new JsonIndices(JsonEventType.VALUE_STRING, startIndex + 1, currentIndex - 1);
                 } else {
+                    state.push(JsonEventType.KEY_NAME);
                     return new JsonIndices(JsonEventType.KEY_NAME, startIndex + 1, currentIndex - 1);
                 }
             case '0':
@@ -158,7 +284,6 @@ public class JSONTokenizer {
             case '.':
             case '-':
                 int numberOfDecimalPoints = currentChar == '.' ? 1 : 0;
-                currentIndex++;
                 if (currentChar == '0' && jsonString.charAt(currentIndex) != '.') {
                     throw new IllegalJSONFormatException("leading zeros are not allowed", jsonString, currentIndex - 1);
                 }
@@ -176,39 +301,29 @@ public class JSONTokenizer {
                     }
                     currentIndex++;
                 }
-                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
-                    state.pop();
-                }
+                state.push(JsonEventType.VALUE_NUMBER);
                 return new JsonIndices(JsonEventType.VALUE_NUMBER, startIndex, currentIndex);
             case 't':
-                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
-                    state.pop();
+                if (jsonString.indexOf("rue", currentIndex) == -1) {
+                    throw new IllegalJSONFormatException("expecting 'true' got " + jsonString.substring(currentIndex - 1, currentIndex + 4));
                 }
-                if (jsonString.indexOf("rue", currentIndex + 1) == -1) {
-                    throw new IllegalJSONFormatException("expecting 'true' got " + jsonString.substring(currentIndex, currentIndex + 4));
-                }
-                currentIndex += 4;
+                currentIndex += 3;
+                state.push(JsonEventType.VALUE_TRUE);
                 return new JsonIndices(JsonEventType.VALUE_TRUE, startIndex, currentIndex);
             case 'f':
-                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
-                    state.pop();
-                }
-                if (jsonString.indexOf("alse", currentIndex + 1) == -1) {
-                    throw new IllegalJSONFormatException("expecting 'false' got " + jsonString.substring(currentIndex, currentIndex + 5));
-                }
-
-                currentIndex += 5;
-                return new JsonIndices(JsonEventType.VALUE_FALSE, startIndex, currentIndex);
-            case 'n':
-                if (state.isLastState(JsonEventType.COMMA) || state.isLastState(JsonEventType.COLON)) {
-                    state.pop();
-                }
-                if (jsonString.indexOf("ull", currentIndex + 1) == -1) {
-                    throw new IllegalJSONFormatException("expecting 'null', got '" + jsonString.substring(currentIndex, currentIndex + 4) + "'", jsonString, currentIndex);
+                if (jsonString.indexOf("alse", currentIndex) == -1) {
+                    throw new IllegalJSONFormatException("expecting 'false' got " + jsonString.substring(currentIndex - 1, currentIndex + 5));
                 }
                 currentIndex += 4;
+                state.push(JsonEventType.VALUE_FALSE);
+                return new JsonIndices(JsonEventType.VALUE_FALSE, startIndex, currentIndex);
+            case 'n':
+                if (jsonString.indexOf("ull", currentIndex) == -1) {
+                    throw new IllegalJSONFormatException("expecting 'null', got '" + jsonString.substring(currentIndex - 1, currentIndex + 4) + "'", jsonString, currentIndex);
+                }
+                currentIndex += 3;
+                state.push(JsonEventType.VALUE_NULL);
                 return new JsonIndices(JsonEventType.VALUE_NULL, startIndex, currentIndex);
-
             default:
                 throw new IllegalJSONFormatException("Unexpected character found: " + currentChar, jsonString, currentIndex);
         }
