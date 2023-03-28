@@ -232,8 +232,8 @@ public class JSONTokenizer {
             case '\"':
                 char c1 = jsonString.charAt(currentIndex);
                 do {
+                    currentIndex++;
                     if (c1 == '\\') {
-                        currentIndex++;
                         c1 = jsonString.charAt(currentIndex);
                         //'"' '\' '/' 'b' 'f' 'n' 'r' 't' 'u' hex hex hex hex
                         if ("\"\\/bfnrtu".indexOf(c1) != -1) {
@@ -255,8 +255,6 @@ public class JSONTokenizer {
                             throw new IllegalJSONFormatException("invalid escape sequence", jsonString, currentIndex);
                         }
 
-                    } else {
-                        currentIndex++;
                     }
                     c1 = jsonString.charAt(currentIndex);
                 } while (c1 != '\n' && c1 != '\"');
@@ -304,29 +302,25 @@ public class JSONTokenizer {
                 state.push(JsonEventType.VALUE_NUMBER);
                 return new JsonIndices(JsonEventType.VALUE_NUMBER, startIndex, currentIndex);
             case 't':
-                if (jsonString.indexOf("rue", currentIndex) == -1) {
-                    throw new IllegalJSONFormatException("expecting 'true' got " + jsonString.substring(currentIndex - 1, currentIndex + 4));
-                }
-                currentIndex += 3;
-                state.push(JsonEventType.VALUE_TRUE);
-                return new JsonIndices(JsonEventType.VALUE_TRUE, startIndex, currentIndex);
+                return checkToken("true", startIndex, JsonEventType.VALUE_TRUE);
             case 'f':
-                if (jsonString.indexOf("alse", currentIndex) == -1) {
-                    throw new IllegalJSONFormatException("expecting 'false' got " + jsonString.substring(currentIndex - 1, currentIndex + 5));
-                }
-                currentIndex += 4;
-                state.push(JsonEventType.VALUE_FALSE);
-                return new JsonIndices(JsonEventType.VALUE_FALSE, startIndex, currentIndex);
+                return checkToken("false", startIndex, JsonEventType.VALUE_FALSE);
             case 'n':
-                if (jsonString.indexOf("ull", currentIndex) == -1) {
-                    throw new IllegalJSONFormatException("expecting 'null', got '" + jsonString.substring(currentIndex - 1, currentIndex + 4) + "'", jsonString, currentIndex);
-                }
-                currentIndex += 3;
-                state.push(JsonEventType.VALUE_NULL);
-                return new JsonIndices(JsonEventType.VALUE_NULL, startIndex, currentIndex);
+                return checkToken("null", startIndex, JsonEventType.VALUE_NULL);
             default:
                 throw new IllegalJSONFormatException("Unexpected character found: " + currentChar, jsonString, currentIndex);
         }
+    }
+
+    JsonIndices checkToken(String expectedToken, int startIndex, JsonEventType successEventType) {
+        if (jsonString.indexOf(expectedToken, currentIndex - 1) == -1) {
+            throw new IllegalJSONFormatException(String.format("expecting '%s', got '%s'",
+                    expectedToken,
+                    jsonString.substring(currentIndex - 1, currentIndex + expectedToken.length()-1)), jsonString, currentIndex);
+        }
+        currentIndex += expectedToken.length()-1;
+        state.push(successEventType);
+        return new JsonIndices(successEventType, startIndex, currentIndex);
     }
 
     private void skipWhitespaces() {
