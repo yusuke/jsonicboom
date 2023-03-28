@@ -1,5 +1,7 @@
 package one.cafebabe.jsonicboom;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
@@ -194,7 +196,7 @@ public class JSONTokenizer {
         if (state.size() != 0) {
             if (state.insideObject) {
                 throw new IllegalJSONFormatException("Unexpected end of JSON string: expected '}' but not found.", jsonString, currentIndex);
-            }else{
+            } else {
                 throw new IllegalJSONFormatException("Unexpected end of JSON string: expected ']' but not found.", jsonString, currentIndex);
             }
         }
@@ -212,28 +214,21 @@ public class JSONTokenizer {
         }
 
         int startIndex = currentIndex;
-        currentIndex++;
         switch (currentChar) {
             case '{':
-                state.push(JsonEventType.START_OBJECT);
-                return new JsonIndices(JsonEventType.START_OBJECT, startIndex, currentIndex);
+                return checkTokenOrderValidity(startIndex, JsonEventType.START_OBJECT, ++currentIndex);
             case '}':
-                state.push(JsonEventType.END_OBJECT);
-                return new JsonIndices(JsonEventType.END_OBJECT, startIndex, currentIndex);
+                return checkTokenOrderValidity(startIndex, JsonEventType.END_OBJECT, ++currentIndex);
             case '[':
-                state.push(JsonEventType.START_ARRAY);
-                return new JsonIndices(JsonEventType.START_ARRAY, startIndex, currentIndex);
+                return checkTokenOrderValidity(startIndex, JsonEventType.START_ARRAY, ++currentIndex);
             case ']':
-                state.push(JsonEventType.END_ARRAY);
-                return new JsonIndices(JsonEventType.END_ARRAY, startIndex, currentIndex);
+                return checkTokenOrderValidity(startIndex, JsonEventType.END_ARRAY, ++currentIndex);
             case ':':
-                state.push(JsonEventType.COLON);
-                return new JsonIndices(JsonEventType.COLON, startIndex, currentIndex);
+                return checkTokenOrderValidity(startIndex, JsonEventType.COLON, ++currentIndex);
             case ',':
-                state.push(JsonEventType.COMMA);
-                return new JsonIndices(JsonEventType.COMMA, startIndex, currentIndex);
+                return checkTokenOrderValidity(startIndex, JsonEventType.COMMA, ++currentIndex);
             case '\"':
-                char c1 = jsonString.charAt(currentIndex);
+                char c1 = jsonString.charAt(++currentIndex);
                 do {
                     currentIndex++;
                     if (c1 == '\\') {
@@ -262,15 +257,10 @@ public class JSONTokenizer {
                     c1 = jsonString.charAt(currentIndex);
                 } while (c1 != '\n' && c1 != '\"');
                 currentIndex++;
-                if (state.isLastToken(JsonEventType.COLON)) {
-                    state.push(JsonEventType.VALUE_STRING);
-                    return new JsonIndices(JsonEventType.VALUE_STRING, startIndex + 1, currentIndex - 1);
-                } else if (state.insideArray) {
-                    state.push(JsonEventType.VALUE_STRING);
-                    return new JsonIndices(JsonEventType.VALUE_STRING, startIndex + 1, currentIndex - 1);
+                if (state.isLastToken(JsonEventType.COLON) || state.insideArray) {
+                    return checkTokenOrderValidity(startIndex + 1, JsonEventType.VALUE_STRING, currentIndex - 1);
                 } else {
-                    state.push(JsonEventType.KEY_NAME);
-                    return new JsonIndices(JsonEventType.KEY_NAME, startIndex + 1, currentIndex - 1);
+                    return checkTokenOrderValidity(startIndex + 1, JsonEventType.KEY_NAME, currentIndex - 1);
                 }
             case '0':
             case '1':
@@ -285,6 +275,7 @@ public class JSONTokenizer {
             case '.':
             case '-':
                 int numberOfDecimalPoints = currentChar == '.' ? 1 : 0;
+                currentIndex++;
                 if (currentChar == '0' && jsonString.charAt(currentIndex) != '.') {
                     throw new IllegalJSONFormatException("Leading zeros are not allowed.", jsonString, currentIndex - 1);
                 }
@@ -302,8 +293,7 @@ public class JSONTokenizer {
                     }
                     currentIndex++;
                 }
-                state.push(JsonEventType.VALUE_NUMBER);
-                return new JsonIndices(JsonEventType.VALUE_NUMBER, startIndex, currentIndex);
+                return checkTokenOrderValidity(startIndex, JsonEventType.VALUE_NUMBER, currentIndex);
             case 't':
                 return checkToken("true", startIndex, JsonEventType.VALUE_TRUE);
             case 'f':
@@ -315,23 +305,28 @@ public class JSONTokenizer {
         }
     }
 
+    @NotNull
+    private JsonIndices checkTokenOrderValidity(int startIndex, JsonEventType eventType, int endIndex) {
+        state.push(eventType);
+        return new JsonIndices(eventType, startIndex, endIndex);
+    }
+
     JsonIndices checkToken(String expectedToken, int startIndex, JsonEventType successEventType) {
-        if (jsonString.indexOf(expectedToken, currentIndex - 1) == -1) {
+        if (jsonString.indexOf(expectedToken, currentIndex++) == -1) {
             throw new IllegalJSONFormatException(String.format("Expecting '%s', got '%s'.",
                     expectedToken,
-                    jsonString.substring(currentIndex - 1, currentIndex + expectedToken.length()-1)), jsonString, currentIndex);
+                    jsonString.substring(currentIndex - 1, currentIndex + expectedToken.length() - 1)), jsonString, currentIndex);
         }
-        currentIndex += expectedToken.length()-1;
-        state.push(successEventType);
-        return new JsonIndices(successEventType, startIndex, currentIndex);
+        currentIndex += expectedToken.length() - 1;
+        return checkTokenOrderValidity(startIndex, successEventType, currentIndex);
     }
 
     private void skipWhitespaces() {
         currentChar = jsonString.charAt(currentIndex);
         while (currentChar == '\r' ||
-               currentChar == '\n' ||
-               currentChar == '\t' ||
-               currentChar == ' '
+                currentChar == '\n' ||
+                currentChar == '\t' ||
+                currentChar == ' '
         ) {
             currentIndex++;
             if (currentIndex >= jsonString.length()) {
@@ -448,10 +443,10 @@ public class JSONTokenizer {
         @Override
         public String toString() {
             return "JsonIndices{" +
-                   "jsonEventType=" + jsonEventType +
-                   ", startIndex=" + startIndex +
-                   ", endIndex=" + endIndex +
-                   '}';
+                    "jsonEventType=" + jsonEventType +
+                    ", startIndex=" + startIndex +
+                    ", endIndex=" + endIndex +
+                    '}';
         }
     }
 }
