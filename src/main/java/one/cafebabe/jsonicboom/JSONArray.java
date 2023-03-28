@@ -24,6 +24,9 @@ public final class JSONArray {
                 case START_OBJECT:
                     arrayValues.add(new JSONObject(jsonTokenizer, next));
                 case END_OBJECT:
+                case COLON:
+                case COMMA:
+                case KEY_NAME:
                     break;
                 case START_ARRAY:
                     arrayValues.add(new JSONArray(jsonTokenizer, next));
@@ -31,8 +34,6 @@ public final class JSONArray {
                 case END_ARRAY:
                     ended = true;
                     endIndex = next.endIndex;
-                    break;
-                case KEY_NAME:
                     break;
                 case VALUE_STRING:
                 case VALUE_NUMBER:

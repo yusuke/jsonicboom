@@ -41,22 +41,16 @@ public final class JSONObject {
                     arrayMap.put(lastKey, new JSONArray(jsonTokenizer, next));
                     break;
                 case END_ARRAY:
+                case COLON:
+                case COMMA:
                     break;
                 case KEY_NAME:
                     lastKey = next.getValue();
                     break;
                 case VALUE_STRING:
-                    map.put(lastKey, next);
-                    break;
                 case VALUE_NUMBER:
-                    map.put(lastKey, next);
-                    break;
                 case VALUE_TRUE:
-                    map.put(lastKey, next);
-                    break;
                 case VALUE_FALSE:
-                    map.put(lastKey, next);
-                    break;
                 case VALUE_NULL:
                     map.put(lastKey, next);
                     break;
@@ -135,6 +129,14 @@ public final class JSONObject {
             JSONTokenizer.JsonIndices jsonIndices = (JSONTokenizer.JsonIndices) o;
             JSONTokenizer.JsonEventType jsonEventType = jsonIndices.jsonEventType;
             switch (jsonEventType) {
+                case START_OBJECT:
+                case KEY_NAME:
+                case COLON:
+                case COMMA:
+                case END_ARRAY:
+                case START_ARRAY:
+                case END_OBJECT:
+                    break;
                 case VALUE_STRING:
                     return jsonIndices.getValue();
                 case VALUE_NUMBER:
