@@ -1,7 +1,9 @@
 package one.cafebabe.jsonicboom;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -25,9 +27,9 @@ public final class JSONObject {
             boolean ended = false;
             switch (next.jsonEventType) {
                 case START_OBJECT:
-                    if(first){
+                    if (first) {
                         first = false;
-                    }else{
+                    } else {
                         map.put(lastKey, new JSONObject(jsonTokenizer, next));
                     }
                     break;
@@ -68,12 +70,19 @@ public final class JSONObject {
     }
 
     @Nullable
-    public String getString(String name) {
-        JSONTokenizer.JsonIndices jsonIndices = (JSONTokenizer.JsonIndices) map.get(name);
-        return jsonIndices.getValue();
+    public String getString(@NotNull String name) {
+        Object o = map.get(name);
+        if (o == null) {
+            return null;
+        } else if (o instanceof JSONTokenizer.JsonIndices) {
+            JSONTokenizer.JsonIndices jsonIndices = (JSONTokenizer.JsonIndices) o;
+            return jsonIndices.getValue();
+        } else {
+            return o.toString();
+        }
     }
 
-    public int getInt(String name) {
+    public int getInt(@NotNull String name) {
         String value = getString(name);
         if (value == null) {
             return -1;
@@ -81,7 +90,32 @@ public final class JSONObject {
         return Integer.parseInt(value);
     }
 
-    public boolean getBoolean(String name) {
+    public long getLong(@NotNull String name) {
+        String value = getString(name);
+        if (value == null) {
+            return -1;
+        }
+        return Long.parseLong(value);
+    }
+
+    public double getDouble(@NotNull String name) {
+        String value = getString(name);
+        if (value == null) {
+            return -1;
+        }
+        return Double.parseDouble(value);
+    }
+
+    @Nullable
+    public BigDecimal getBigDecimal(@NotNull String name) {
+        String value = getString(name);
+        if (value == null) {
+            return null;
+        }
+        return new BigDecimal(value);
+    }
+
+    public boolean getBoolean(@NotNull String name) {
         String value = getString(name);
         if (value == null) {
             return false;
@@ -90,20 +124,59 @@ public final class JSONObject {
     }
 
     @Nullable
-    public JSONArray getJSONArray(String name) {
+    public JSONArray getJSONArray(@NotNull String name) {
         return arrayMap.get(name);
     }
 
     @Nullable
-    public JSONObject get(String name) {
+    public Object get(@NotNull String name) {
+        Object o = map.get(name);
+        if (o instanceof JSONTokenizer.JsonIndices) {
+            JSONTokenizer.JsonIndices jsonIndices = (JSONTokenizer.JsonIndices) o;
+            JSONTokenizer.JsonEventType jsonEventType = jsonIndices.jsonEventType;
+            switch (jsonEventType) {
+                case VALUE_STRING:
+                    return jsonIndices.getValue();
+                case VALUE_NUMBER:
+                    try {
+                        //noinspection DataFlowIssue
+                        return Integer.parseInt(jsonIndices.getValue());
+                    } catch (NumberFormatException nfe) {
+                        try {
+                            //noinspection DataFlowIssue
+                            return Long.valueOf(jsonIndices.getValue());
+                        } catch (NumberFormatException nfe2) {
+                            //noinspection DataFlowIssue
+                            return Double.parseDouble(jsonIndices.getValue());
+                        }
+                    }
+                case VALUE_TRUE:
+                    return Boolean.TRUE;
+                case VALUE_FALSE:
+                    return Boolean.FALSE;
+                case VALUE_NULL:
+                    return null;
+            }
+        }
+        if (o == null) {
+            // JSONArray
+            return arrayMap.get(name);
+        }else {
+            // JSONObject
+            return o;
+        }
+    }
+
+    @Nullable
+    public JSONObject getJSONObject(@NotNull String name) {
         Object o = map.get(name);
         if (o instanceof JSONTokenizer.JsonIndices &&
-            ((JSONTokenizer.JsonIndices) o).jsonEventType == JSONTokenizer.JsonEventType.VALUE_NULL) {
+                ((JSONTokenizer.JsonIndices) o).jsonEventType == JSONTokenizer.JsonEventType.VALUE_NULL) {
             return null;
         } else if (o instanceof JSONObject) {
             return (JSONObject) o;
         }
-        throw new UnsupportedOperationException(String.format("value for %s is not JSONObject: %s", name, o));
+        throw new UnsupportedOperationException(String.format("Value for '%s' is not JSONObject: %s.", name, o));
     }
 
     @Override
@@ -122,5 +195,9 @@ public final class JSONObject {
     @Override
     public String toString() {
         return jsonString.substring(startIndex, endIndex);
+    }
+
+    public boolean has(@NotNull String name) {
+        return map.containsKey(name) || arrayMap.containsKey(name);
     }
 }
