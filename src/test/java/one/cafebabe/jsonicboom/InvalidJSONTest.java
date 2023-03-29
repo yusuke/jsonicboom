@@ -70,6 +70,12 @@ public class InvalidJSONTest   {
                 """));
     }
     @Test
+    void extraColonJSONObject() {
+        assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
+                {"key1": "value1", "key2":: "value2"}
+                """));
+    }
+    @Test
     void startWithCommaJSONObject() {
         assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
                 ,{"key1": "value1", "key2": "value2",}
