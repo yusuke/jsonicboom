@@ -245,17 +245,15 @@ public class JSONTokenizer {
                 return checkTokenOrderValidity(startIndex, JsonEventType.COMMA, ++currentIndex);
             case '\"':
                 do {
-                    currentChar = jsonString.charAt(++currentIndex);
-                    if (currentChar == '\\') {
-                        currentChar = jsonString.charAt(++currentIndex);
+                    if (getNextChar() == '\\') {
                         //'"' '\' '/' 'b' 'f' 'n' 'r' 't' 'u' hex hex hex hex
-                        if ("\"\\/bfnrtu".indexOf(currentChar) != -1) {
+                        if ("\"\\/bfnrtu".indexOf(getNextChar()) != -1) {
                             if (currentChar == 'u') {
                                 if (jsonString.length() < currentIndex + 4) {
                                     throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
                                 }
                                 for (int i = 0; i < 4; i++) {
-                                    currentChar = jsonString.charAt(++currentIndex);
+                                    getNextChar();
                                     if (!((currentChar >= '0' && currentChar <= '9') || (currentChar >= 'a' && currentChar <= 'f') || (currentChar >= 'A' && currentChar <= 'F'))) {
                                         throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
                                     }
@@ -264,15 +262,12 @@ public class JSONTokenizer {
                         } else {
                             throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
                         }
-                        currentChar = jsonString.charAt(++currentIndex);
+                        getNextChar();
                     }
                 } while (currentChar != '\n' && currentChar != '\"');
-                currentIndex++;
-                if (state.isLastToken(JsonEventType.COLON) || state.insideArray) {
-                    return checkTokenOrderValidity(startIndex + 1, JsonEventType.VALUE_STRING, currentIndex - 1);
-                } else {
-                    return checkTokenOrderValidity(startIndex + 1, JsonEventType.KEY_NAME, currentIndex - 1);
-                }
+                return checkTokenOrderValidity(startIndex + 1,
+                        state.isLastToken(JsonEventType.COLON) || state.insideArray ? JsonEventType.VALUE_STRING : JsonEventType.KEY_NAME
+                        , currentIndex++);
             case '0':
             case '1':
             case '2':
@@ -287,7 +282,7 @@ public class JSONTokenizer {
             case '-':
                 boolean decimalPointAlreadyFound = currentChar == '.';
                 boolean checkNextCharIsDecimalPoint = currentChar == '0';
-                while (" \t\n\r,]}".indexOf(currentChar = jsonString.charAt(++currentIndex)) == -1) {
+                while (" \t\n\r,]}".indexOf(getNextChar()) == -1) {
                     // current character must be number, comma
                     if (currentChar == '.') {
                         if (decimalPointAlreadyFound) {
@@ -295,7 +290,7 @@ public class JSONTokenizer {
                         }
                         decimalPointAlreadyFound = true;
                         checkNextCharIsDecimalPoint = false;
-                    }else if(checkNextCharIsDecimalPoint){
+                    } else if (checkNextCharIsDecimalPoint) {
                         throw new IllegalJSONFormatException("Leading zeros are not allowed.", jsonString, currentIndex - 1);
                     } else if (!(currentChar >= '0' && '9' >= currentChar)) {
                         throw new IllegalJSONFormatException("Expecting 'number', got '" + currentChar + "'.", jsonString, currentIndex);
@@ -311,6 +306,10 @@ public class JSONTokenizer {
             default:
                 throw new IllegalJSONFormatException(String.format("Unexpected character found: '%s'.", currentChar), jsonString, currentIndex);
         }
+    }
+
+    private char getNextChar() {
+        return currentChar = jsonString.charAt(++currentIndex);
     }
 
     @NotNull
