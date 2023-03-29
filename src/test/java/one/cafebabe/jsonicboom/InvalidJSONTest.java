@@ -262,7 +262,14 @@ public class InvalidJSONTest   {
         assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
                 {"key": "\\u12G6"}
                 """));
-    }}
+    }
+    @Test
+    void tooShortUnicodeEscapeSequence() {
+        assertThrows(IllegalJSONFormatException.class, () -> JSON.parseObject("""
+                {"key": "\\u12"}
+                """));
+    }
+}
 
 
 

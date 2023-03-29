@@ -247,20 +247,15 @@ public class JSONTokenizer {
                 do {
                     if (getNextChar() == '\\') {
                         //'"' '\' '/' 'b' 'f' 'n' 'r' 't' 'u' hex hex hex hex
-                        if ("\"\\/bfnrtu".indexOf(getNextChar()) != -1) {
-                            if (currentChar == 'u') {
-                                if (jsonString.length() < currentIndex + 4) {
-                                    throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
-                                }
-                                for (int i = 0; i < 4; i++) {
-                                    getNextChar();
-                                    if (!((currentChar >= '0' && currentChar <= '9') || (currentChar >= 'a' && currentChar <= 'f') || (currentChar >= 'A' && currentChar <= 'F'))) {
-                                        throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
-                                    }
+                        if (getNextChar() == 'u') {
+                            for (int i = 0; i < 4; i++) {
+                                getNextChar();
+                                if (!((currentChar >= '0' && currentChar <= '9') || (currentChar >= 'a' && currentChar <= 'f') || (currentChar >= 'A' && currentChar <= 'F'))) {
+                                    throw new IllegalJSONFormatException(String.format("Invalid escape sequence. Expecting [a-fA-F0-9], got '%s'", currentChar), jsonString, currentIndex);
                                 }
                             }
-                        } else {
-                            throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
+                        } else if ("\"\\/bfnrtu".indexOf(currentChar) == -1) {
+                            throw new IllegalJSONFormatException(String.format("Invalid escape sequence. Expecting [\"\\/bfnrtu], got '%s'", currentChar), jsonString, currentIndex);
                         }
                         getNextChar();
                     }
@@ -309,7 +304,11 @@ public class JSONTokenizer {
     }
 
     private char getNextChar() {
-        return currentChar = jsonString.charAt(++currentIndex);
+        try {
+            return currentChar = jsonString.charAt(++currentIndex);
+        }catch(StringIndexOutOfBoundsException e){
+            throw new IllegalJSONFormatException("Unexpected end of JSON.", jsonString, currentIndex - 1);
+        }
     }
 
     @NotNull
