@@ -285,19 +285,21 @@ public class JSONTokenizer {
             case '9':
             case '.':
             case '-':
-                int numberOfDecimalPoints = this.currentChar == '.' ? 1 : 0;
-                if (this.currentChar == '0' && jsonString.charAt(currentIndex + 1) != '.') {
-                    throw new IllegalJSONFormatException("Leading zeros are not allowed.", jsonString, currentIndex - 1);
-                }
-                while (" \t\n\r,]}".indexOf(currentChar =jsonString.charAt(++currentIndex)) == -1) {
+                boolean decimalPointAlreadyFound = currentChar == '.';
+                boolean checkNextCharIsDecimalPoint = currentChar == '0';
+                while (" \t\n\r,]}".indexOf(currentChar = jsonString.charAt(++currentIndex)) == -1) {
+                    if (checkNextCharIsDecimalPoint && currentChar != '.') {
+                        throw new IllegalJSONFormatException("Leading zeros are not allowed.", jsonString, currentIndex - 1);
+                    } else {
+                        checkNextCharIsDecimalPoint = false;
+                    }
                     // current character must be number, comma
                     if (currentChar == '.') {
-                        numberOfDecimalPoints++;
-                        if (1 < numberOfDecimalPoints) {
+                        if (decimalPointAlreadyFound) {
                             throw new IllegalJSONFormatException("Too many decimal points.", jsonString, currentIndex);
                         }
-                    }
-                    if (currentChar != '.' && !(currentChar >= '0' && '9' >= currentChar)) {
+                        decimalPointAlreadyFound = true;
+                    } else if (!(currentChar >= '0' && '9' >= currentChar)) {
                         throw new IllegalJSONFormatException("Expecting 'number', got '" + currentChar + "'.", jsonString, currentIndex);
                     }
                 }
@@ -309,7 +311,7 @@ public class JSONTokenizer {
             case 'n':
                 return checkToken("null", startIndex, JsonEventType.VALUE_NULL);
             default:
-                throw new IllegalJSONFormatException(String.format("Unexpected character found: '%s'.", this.currentChar), jsonString, currentIndex);
+                throw new IllegalJSONFormatException(String.format("Unexpected character found: '%s'.", currentChar), jsonString, currentIndex);
         }
     }
 
