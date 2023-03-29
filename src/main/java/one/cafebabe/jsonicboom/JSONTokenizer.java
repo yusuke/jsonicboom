@@ -251,19 +251,18 @@ public class JSONTokenizer {
                         c1 = jsonString.charAt(currentIndex);
                         //'"' '\' '/' 'b' 'f' 'n' 'r' 't' 'u' hex hex hex hex
                         if ("\"\\/bfnrtu".indexOf(c1) != -1) {
+                            currentIndex++;
                             if (c1 == 'u') {
                                 if (jsonString.length() < currentIndex + 4) {
                                     throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
                                 }
-                                for (int i = currentIndex + 1; i < currentIndex + 5; i++) {
+                                for (int i = currentIndex; i < currentIndex + 4; i++) {
                                     char hexChar = jsonString.charAt(i);
                                     if (!((hexChar >= '0' && hexChar <= '9') || (hexChar >= 'a' && hexChar <= 'f') || (hexChar >= 'A' && hexChar <= 'F'))) {
                                         throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
                                     }
                                 }
                                 currentIndex += 4;
-                            } else {
-                                currentIndex++;
                             }
                         } else {
                             throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
