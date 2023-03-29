@@ -244,21 +244,21 @@ public class JSONTokenizer {
             case ',':
                 return checkTokenOrderValidity(startIndex, JsonEventType.COMMA, ++currentIndex);
             case '\"':
-                char c1 = jsonString.charAt(++currentIndex);
+                currentChar = jsonString.charAt(++currentIndex);
                 do {
                     currentIndex++;
-                    if (c1 == '\\') {
-                        c1 = jsonString.charAt(currentIndex);
+                    if (currentChar == '\\') {
+                        currentChar = jsonString.charAt(currentIndex);
                         //'"' '\' '/' 'b' 'f' 'n' 'r' 't' 'u' hex hex hex hex
-                        if ("\"\\/bfnrtu".indexOf(c1) != -1) {
+                        if ("\"\\/bfnrtu".indexOf(currentChar) != -1) {
                             currentIndex++;
-                            if (c1 == 'u') {
+                            if (currentChar == 'u') {
                                 if (jsonString.length() < currentIndex + 4) {
                                     throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
                                 }
                                 for (int i = currentIndex; i < currentIndex + 4; i++) {
-                                    char hexChar = jsonString.charAt(i);
-                                    if (!((hexChar >= '0' && hexChar <= '9') || (hexChar >= 'a' && hexChar <= 'f') || (hexChar >= 'A' && hexChar <= 'F'))) {
+                                    currentChar = jsonString.charAt(i);
+                                    if (!((currentChar >= '0' && currentChar <= '9') || (currentChar >= 'a' && currentChar <= 'f') || (currentChar >= 'A' && currentChar <= 'F'))) {
                                         throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
                                     }
                                 }
@@ -269,8 +269,8 @@ public class JSONTokenizer {
                         }
 
                     }
-                    c1 = jsonString.charAt(currentIndex);
-                } while (c1 != '\n' && c1 != '\"');
+                    currentChar = jsonString.charAt(currentIndex);
+                } while (currentChar != '\n' && currentChar != '\"');
                 currentIndex++;
                 if (state.isLastToken(JsonEventType.COLON) || state.insideArray) {
                     return checkTokenOrderValidity(startIndex + 1, JsonEventType.VALUE_STRING, currentIndex - 1);
@@ -289,22 +289,22 @@ public class JSONTokenizer {
             case '9':
             case '.':
             case '-':
-                int numberOfDecimalPoints = currentChar == '.' ? 1 : 0;
+                int numberOfDecimalPoints = this.currentChar == '.' ? 1 : 0;
                 currentIndex++;
-                if (currentChar == '0' && jsonString.charAt(currentIndex) != '.') {
+                if (this.currentChar == '0' && jsonString.charAt(currentIndex) != '.') {
                     throw new IllegalJSONFormatException("Leading zeros are not allowed.", jsonString, currentIndex - 1);
                 }
                 while (" \t\n\r,]}".indexOf(jsonString.charAt(currentIndex)) == -1) {
                     // current character must be number, comma
-                    char c = jsonString.charAt(currentIndex);
-                    if (c == '.') {
+                    currentChar = jsonString.charAt(currentIndex);
+                    if (currentChar == '.') {
                         numberOfDecimalPoints++;
                         if (1 < numberOfDecimalPoints) {
                             throw new IllegalJSONFormatException("Too many decimal points.", jsonString, currentIndex);
                         }
                     }
-                    if (c != '.' && !(c >= '0' && '9' >= c)) {
-                        throw new IllegalJSONFormatException("Expecting 'number', got '" + c + "'.", jsonString, currentIndex);
+                    if (currentChar != '.' && !(currentChar >= '0' && '9' >= currentChar)) {
+                        throw new IllegalJSONFormatException("Expecting 'number', got '" + currentChar + "'.", jsonString, currentIndex);
                     }
                     currentIndex++;
                 }
@@ -316,7 +316,7 @@ public class JSONTokenizer {
             case 'n':
                 return checkToken("null", startIndex, JsonEventType.VALUE_NULL);
             default:
-                throw new IllegalJSONFormatException(String.format("Unexpected character found: '%s'.", currentChar), jsonString, currentIndex);
+                throw new IllegalJSONFormatException(String.format("Unexpected character found: '%s'.", this.currentChar), jsonString, currentIndex);
         }
     }
 
