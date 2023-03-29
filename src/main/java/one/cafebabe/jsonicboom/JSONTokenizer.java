@@ -288,17 +288,15 @@ public class JSONTokenizer {
                 boolean decimalPointAlreadyFound = currentChar == '.';
                 boolean checkNextCharIsDecimalPoint = currentChar == '0';
                 while (" \t\n\r,]}".indexOf(currentChar = jsonString.charAt(++currentIndex)) == -1) {
-                    if (checkNextCharIsDecimalPoint && currentChar != '.') {
-                        throw new IllegalJSONFormatException("Leading zeros are not allowed.", jsonString, currentIndex - 1);
-                    } else {
-                        checkNextCharIsDecimalPoint = false;
-                    }
                     // current character must be number, comma
                     if (currentChar == '.') {
                         if (decimalPointAlreadyFound) {
                             throw new IllegalJSONFormatException("Too many decimal points.", jsonString, currentIndex);
                         }
                         decimalPointAlreadyFound = true;
+                        checkNextCharIsDecimalPoint = false;
+                    }else if(checkNextCharIsDecimalPoint){
+                        throw new IllegalJSONFormatException("Leading zeros are not allowed.", jsonString, currentIndex - 1);
                     } else if (!(currentChar >= '0' && '9' >= currentChar)) {
                         throw new IllegalJSONFormatException("Expecting 'number', got '" + currentChar + "'.", jsonString, currentIndex);
                     }
