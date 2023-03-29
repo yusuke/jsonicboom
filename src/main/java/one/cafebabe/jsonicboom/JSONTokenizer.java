@@ -244,32 +244,28 @@ public class JSONTokenizer {
             case ',':
                 return checkTokenOrderValidity(startIndex, JsonEventType.COMMA, ++currentIndex);
             case '\"':
-                currentChar = jsonString.charAt(++currentIndex);
                 do {
-                    currentIndex++;
+                    currentChar = jsonString.charAt(++currentIndex);
                     if (currentChar == '\\') {
-                        currentChar = jsonString.charAt(currentIndex);
+                        currentChar = jsonString.charAt(++currentIndex);
                         //'"' '\' '/' 'b' 'f' 'n' 'r' 't' 'u' hex hex hex hex
                         if ("\"\\/bfnrtu".indexOf(currentChar) != -1) {
-                            currentIndex++;
                             if (currentChar == 'u') {
                                 if (jsonString.length() < currentIndex + 4) {
                                     throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
                                 }
-                                for (int i = currentIndex; i < currentIndex + 4; i++) {
-                                    currentChar = jsonString.charAt(i);
+                                for (int i = 0; i < 4; i++) {
+                                    currentChar = jsonString.charAt(++currentIndex);
                                     if (!((currentChar >= '0' && currentChar <= '9') || (currentChar >= 'a' && currentChar <= 'f') || (currentChar >= 'A' && currentChar <= 'F'))) {
                                         throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
                                     }
                                 }
-                                currentIndex += 4;
                             }
                         } else {
                             throw new IllegalJSONFormatException("Invalid escape sequence.", jsonString, currentIndex);
                         }
-
+                        currentChar = jsonString.charAt(++currentIndex);
                     }
-                    currentChar = jsonString.charAt(currentIndex);
                 } while (currentChar != '\n' && currentChar != '\"');
                 currentIndex++;
                 if (state.isLastToken(JsonEventType.COLON) || state.insideArray) {
@@ -290,13 +286,11 @@ public class JSONTokenizer {
             case '.':
             case '-':
                 int numberOfDecimalPoints = this.currentChar == '.' ? 1 : 0;
-                currentIndex++;
-                if (this.currentChar == '0' && jsonString.charAt(currentIndex) != '.') {
+                if (this.currentChar == '0' && jsonString.charAt(currentIndex + 1) != '.') {
                     throw new IllegalJSONFormatException("Leading zeros are not allowed.", jsonString, currentIndex - 1);
                 }
-                while (" \t\n\r,]}".indexOf(jsonString.charAt(currentIndex)) == -1) {
+                while (" \t\n\r,]}".indexOf(currentChar =jsonString.charAt(++currentIndex)) == -1) {
                     // current character must be number, comma
-                    currentChar = jsonString.charAt(currentIndex);
                     if (currentChar == '.') {
                         numberOfDecimalPoints++;
                         if (1 < numberOfDecimalPoints) {
@@ -306,7 +300,6 @@ public class JSONTokenizer {
                     if (currentChar != '.' && !(currentChar >= '0' && '9' >= currentChar)) {
                         throw new IllegalJSONFormatException("Expecting 'number', got '" + currentChar + "'.", jsonString, currentIndex);
                     }
-                    currentIndex++;
                 }
                 return checkTokenOrderValidity(startIndex, JsonEventType.VALUE_NUMBER, currentIndex);
             case 't':
