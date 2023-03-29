@@ -277,6 +277,8 @@ public class JSONTokenizer {
             case '-':
                 boolean decimalPointAlreadyFound = currentChar == '.';
                 boolean checkNextCharIsDecimalPoint = currentChar == '0';
+                boolean exponentFound = false;
+                boolean isFloatingPointNumber = false;
                 while (" \t\n\r,]}".indexOf(getNextChar()) == -1) {
                     // current character must be number, comma
                     if (currentChar == '.') {
@@ -285,11 +287,28 @@ public class JSONTokenizer {
                         }
                         decimalPointAlreadyFound = true;
                         checkNextCharIsDecimalPoint = false;
+                    } else if(currentChar == 'E' || currentChar == 'e'){
+                        if (exponentFound) {
+                            throw new IllegalJSONFormatException("Invalid number expression.", jsonString, currentIndex);
+                        }
+                        exponentFound = true;
+                    }else if(currentChar == '-' || currentChar == '+'){
+                        if (isFloatingPointNumber || !exponentFound) {
+                            throw new IllegalJSONFormatException("Invalid number expression.", jsonString, currentIndex);
+                        }
+                        isFloatingPointNumber = true;
                     } else if (checkNextCharIsDecimalPoint) {
                         throw new IllegalJSONFormatException("Leading zeros are not allowed.", jsonString, currentIndex - 1);
-                    } else if (!(currentChar >= '0' && '9' >= currentChar)) {
+                    }else if(currentChar >= '0' && '9' >= currentChar){
+                        if(exponentFound && !isFloatingPointNumber){
+                            isFloatingPointNumber = true;
+                        }
+                    } else {
                         throw new IllegalJSONFormatException("Expecting 'number', got '" + currentChar + "'.", jsonString, currentIndex);
                     }
+                }
+                if (exponentFound && !isFloatingPointNumber) {
+                    throw new IllegalJSONFormatException("Invalid number expression.", jsonString, currentIndex);
                 }
                 return checkTokenOrderValidity(startIndex, JsonEventType.VALUE_NUMBER, currentIndex);
             case 't':

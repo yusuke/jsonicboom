@@ -169,4 +169,17 @@ public class JSONObjectTest {
         assertThrows(IndexOutOfBoundsException.class, () -> hobbies.getString(3));
 
     }
+    @Test
+    void floatingPoint(){
+        assertEquals(-31.2, JSON.parseObject("""
+                {"age":-3.12E1}""").getDouble("age"));
+        assertEquals(-31.2, JSON.parseObject("""
+                {"age":-3.12E+1}""").getDouble("age"));
+        assertEquals(-312, JSON.parseObject("""
+                {"age":-3.12E+2}""").getDouble("age"));
+        assertEquals(-0.0312, JSON.parseObject("""
+                {"age":-3.12E-2}""").getDouble("age"));
+        assertEquals(-0.0000312, JSON.parseObject("""
+                {"age":-3.12E-5}""").getDouble("age"));
+    }
 }

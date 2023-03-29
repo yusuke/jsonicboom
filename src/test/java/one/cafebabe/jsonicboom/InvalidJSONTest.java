@@ -269,6 +269,18 @@ public class InvalidJSONTest   {
                 {"key": "\\u12"}
                 """));
     }
+    @Test
+    void invalidFloatingPoint(){
+        assertThrows(IllegalJSONFormatException.class,()->JSON.parseObject("""
+                {"age":-3.12E++1}"""));
+        assertThrows(IllegalJSONFormatException.class,()->JSON.parseObject("""
+                {"age":-3.12EE+1}"""));
+        assertThrows(IllegalJSONFormatException.class,()->JSON.parseObject("""
+                {"age":-3.12E+1E-2}"""));
+        assertThrows(IllegalJSONFormatException.class,()->JSON.parseObject("""
+                {"age":-3.12+2}"""));
+    }
+
 }
 
 
